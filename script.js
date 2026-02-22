@@ -40,7 +40,6 @@ function atualizar() {
 
     if (freq !== -1) {
 
-        // 🔥 SUAVIZA FREQUÊNCIA
         frequencias.push(freq);
         if (frequencias.length > 8) frequencias.shift();
 
@@ -49,7 +48,6 @@ function atualizar() {
 
         const resultado = analisarNota(media);
 
-        // 🔒 CONTROLE INTELIGENTE DE TROCA
         if (notaAtual === "") {
             notaAtual = resultado.nome;
         }
@@ -73,7 +71,7 @@ function atualizar() {
         document.getElementById("hz").innerText =
             Math.round(media) + " Hz";
 
-        // 🔥 SUAVIZA CENTS
+
         centsSuave = centsSuave * 0.85 + resultado.diferenca * 0.15;
 
         atualizarPonteiro(centsSuave);
@@ -105,26 +103,25 @@ function atualizarPonteiro(cents) {
     const ponteiro = document.getElementById("ponteiro");
     const notaTexto = document.getElementById("nota");
 
-    const limite = 50; // -50 a +50 cents
+    const limite = 50;
     const larguraBarra = 300;
 
-    // Limita o valor
+
     const valor = Math.max(-limite, Math.min(limite, cents));
 
-    // Converte cents em posição na barra
+
     const porcentagem = (valor + limite) / (limite * 2);
     const posicao = porcentagem * larguraBarra;
 
     ponteiro.style.left = posicao + "px";
 
-    // 🔥 AGORA DEFINIMOS A ÁREA VERDE FIXA
+
     const centro = larguraBarra / 2;
-    const larguraVerde = 40; // tamanho da zona verde
+    const larguraVerde = 40; 
 
     const inicioVerde = centro - larguraVerde / 2;
     const fimVerde = centro + larguraVerde / 2;
 
-    // Se ponteiro estiver dentro da área verde
     if (posicao >= inicioVerde && posicao <= fimVerde) {
         notaTexto.style.color = "#00ff88";
     } else {
@@ -139,8 +136,10 @@ function alternarAcidente() {
 
     if (usarBemol) {
         botao.innerText = "♭";
+        botao.style.transform = "scale(1) translateY(-3px)";
     } else {
         botao.innerText = "♯";
+        botao.style.transform = "scale(1) translateY(0px)";
     }
 }
 
