@@ -15,6 +15,11 @@ async function iniciarAfinador() {
 
     let ultimoSom = Date.now();
 
+    // 🔥 Variáveis de estabilização
+    let historicoFrequencias = [];
+    let ultimaNotaMostrada = "";
+    let contadorEstavel = 0;
+
     function atualizar() {
 
         analisador.getFloatTimeDomainData(dados);
@@ -24,29 +29,51 @@ async function iniciarAfinador() {
 
         if (frequencia !== -1) {
 
-            const resultado = analisarNota(frequencia);
-
-            ultimoSom = agora;
-
-            document.getElementById("nota").innerText = resultado.nome;
-            document.getElementById("hz").innerText = Math.round(frequencia) + " Hz";
-
-            if (resultado.diferenca > 5) {
-                document.getElementById("altura").innerText = "🔺 Alto";
+            // 🔥 Suavização (guardar últimas 5 leituras)
+            historicoFrequencias.push(frequencia);
+            if (historicoFrequencias.length > 5) {
+                historicoFrequencias.shift();
             }
-            else if (resultado.diferenca < -5) {
-                document.getElementById("altura").innerText = "🔻 Baixo";
+
+            // Média
+            const media = historicoFrequencias.reduce((a, b) => a + b, 0) / historicoFrequencias.length;
+
+            const resultado = analisarNota(media);
+
+            // 🔥 Só muda a nota se repetir 3 vezes seguidas
+            if (resultado.nome === ultimaNotaMostrada) {
+                contadorEstavel++;
+            } else {
+                contadorEstavel = 0;
             }
-            else {
-                document.getElementById("altura").innerText = "✅ Afinado";
+
+            if (contadorEstavel > 2) {
+
+                ultimoSom = agora;
+
+                document.getElementById("nota").innerText = resultado.nome;
+                document.getElementById("hz").innerText = Math.round(media) + " Hz";
+
+                if (resultado.diferenca > 5) {
+                    document.getElementById("altura").innerText = "🔺 Alto";
+                }
+                else if (resultado.diferenca < -5) {
+                    document.getElementById("altura").innerText = "🔻 Baixo";
+                }
+                else {
+                    document.getElementById("altura").innerText = "✅ Afinado";
+                }
             }
+
+            ultimaNotaMostrada = resultado.nome;
         }
 
-        // 🔥 Mantém a última nota por 2500ms (2.5 segundos)
+        // Limpa depois de 2.5 segundos sem som
         if (agora - ultimoSom > 2500) {
             document.getElementById("nota").innerText = "";
             document.getElementById("hz").innerText = "";
             document.getElementById("altura").innerText = "";
+            historicoFrequencias = [];
         }
 
         requestAnimationFrame(atualizar);
@@ -57,7 +84,7 @@ async function iniciarAfinador() {
 
 
 
-// 🎵 Analisa nota e diferença
+// 🎵 Analisa nota
 function analisarNota(freq) {
 
     const notas = ["Dó", "Dó#", "Ré", "Ré#", "Mi", "Fá", "Fá#", "Sol", "Sol#", "Lá", "Lá#", "Si"];
@@ -80,7 +107,7 @@ function analisarNota(freq) {
 
 
 
-// 🎯 Detectar frequência (autocorrelação simples)
+// 🎯 Detectar frequência
 function detectarFrequencia(dados, taxa) {
 
     let tamanho = dados.length;
