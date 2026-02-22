@@ -3,14 +3,20 @@ async function iniciarAfinador() {
     const microfone = await navigator.mediaDevices.getUserMedia({ audio: true });
 
     const contextoAudio = new AudioContext();
+    await contextoAudio.resume();
+
     const fonte = contextoAudio.createMediaStreamSource(microfone);
-
     const analisador = contextoAudio.createAnalyser();
-    analisador.fftSize = 2048;
 
+    analisador.fftSize = 2048;
     fonte.connect(analisador);
 
     const dados = new Float32Array(analisador.fftSize);
+
+    // 🔥 Guardar última nota
+    let ultimaNota = null;
+    let ultimaFrequencia = null;
+    let ultimoTempoDetectado = 0;
 
     function atualizar() {
 
@@ -18,15 +24,24 @@ async function iniciarAfinador() {
 
         const frequencia = detectarFrequencia(dados, contextoAudio.sampleRate);
 
+        const agora = Date.now();
+
         if (frequencia !== -1) {
 
             const nota = converterParaNota(frequencia);
 
+            ultimaNota = nota;
+            ultimaFrequencia = frequencia;
+            ultimoTempoDetectado = agora;
+
             document.getElementById("nota").innerText = nota;
             document.getElementById("hz").innerText = Math.round(frequencia) + " Hz";
-            document.getElementById("altura").innerText = "Som detectado!";
-        } else {
-            document.getElementById("altura").innerText = "Silêncio...";
+        }
+
+        // ⏳ Se ficar 2 segundos sem som, limpa a tela
+        if (agora - ultimoTempoDetectado > 2000) {
+            document.getElementById("nota").innerText = "";
+            document.getElementById("hz").innerText = "";
         }
 
         requestAnimationFrame(atualizar);
