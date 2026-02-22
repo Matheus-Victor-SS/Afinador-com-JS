@@ -29,39 +29,30 @@ button {
     color: #aaa;
 }
 
-/* ===== Barra ===== */
-
-#tuner {
-    width: 80%;
-    max-width: 500px;
-    margin: 50px auto;
+.barra {
     position: relative;
-}
-
-#linha {
-    height: 6px;
+    width: 300px;
+    height: 20px;
     background: #333;
     border-radius: 10px;
-    position: relative;
+    margin: 20px auto;
 }
 
-#zonaAfinada {
+.zona-verde {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px;
-    height: 6px;
-    background: lime;
-    border-radius: 10px;
+    width: 40px;
+    height: 100%;
+    background: #00ff88;
+    border-radius: 6px;
 }
 
-#ponteiro {
+.ponteiro {
+    position: absolute;
+    top: -5px;
     width: 4px;
     height: 30px;
     background: white;
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: left 0.15s ease-out;
+    transition: left 0.1s linear;
 }
