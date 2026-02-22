@@ -13,8 +13,6 @@ async function iniciarAfinador() {
 
     const dados = new Float32Array(analisador.fftSize);
 
-    let ultimaNota = "";
-    let ultimaFrequencia = 0;
     let ultimoSom = Date.now();
 
     function atualizar() {
@@ -22,24 +20,33 @@ async function iniciarAfinador() {
         analisador.getFloatTimeDomainData(dados);
 
         const frequencia = detectarFrequencia(dados, contexto.sampleRate);
-
         const agora = Date.now();
 
         if (frequencia !== -1) {
 
-            const nota = converterParaNota(frequencia);
+            const resultado = analisarNota(frequencia);
 
-            ultimaNota = nota;
-            ultimaFrequencia = frequencia;
             ultimoSom = agora;
 
-            document.getElementById("nota").innerText = ultimaNota;
-            document.getElementById("hz").innerText = Math.round(ultimaFrequencia) + " Hz";
+            document.getElementById("nota").innerText = resultado.nome;
+            document.getElementById("hz").innerText = Math.round(frequencia) + " Hz";
+
+            if (resultado.diferenca > 5) {
+                document.getElementById("altura").innerText = "🔺 Alto";
+            }
+            else if (resultado.diferenca < -5) {
+                document.getElementById("altura").innerText = "🔻 Baixo";
+            }
+            else {
+                document.getElementById("altura").innerText = "✅ Afinado";
+            }
         }
 
-        if (agora - ultimoSom > 5000) {
+        // 🔥 Mantém a última nota por 2500ms (2.5 segundos)
+        if (agora - ultimoSom > 2500) {
             document.getElementById("nota").innerText = "";
             document.getElementById("hz").innerText = "";
+            document.getElementById("altura").innerText = "";
         }
 
         requestAnimationFrame(atualizar);
@@ -50,20 +57,30 @@ async function iniciarAfinador() {
 
 
 
-
-function converterParaNota(freq) {
+// 🎵 Analisa nota e diferença
+function analisarNota(freq) {
 
     const notas = ["Dó", "Dó#", "Ré", "Ré#", "Mi", "Fá", "Fá#", "Sol", "Sol#", "Lá", "Lá#", "Si"];
 
     const numero = 12 * (Math.log2(freq / 440));
-    const indice = Math.round(numero) + 69;
+    const notaNumero = Math.round(numero);
+    const indice = notaNumero + 69;
 
-    return notas[indice % 12];
+    const nomeNota = notas[indice % 12];
+
+    const frequenciaIdeal = 440 * Math.pow(2, notaNumero / 12);
+
+    const diferenca = 1200 * Math.log2(freq / frequenciaIdeal);
+
+    return {
+        nome: nomeNota,
+        diferenca: diferenca
+    };
 }
 
 
 
-
+// 🎯 Detectar frequência (autocorrelação simples)
 function detectarFrequencia(dados, taxa) {
 
     let tamanho = dados.length;
