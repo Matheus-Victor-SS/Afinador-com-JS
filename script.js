@@ -1,6 +1,7 @@
 async function iniciarAfinador() {
 
     const microfone = await navigator.mediaDevices.getUserMedia({ audio: true });
+
     const contexto = new AudioContext();
     await contexto.resume();
 
@@ -12,51 +13,71 @@ async function iniciarAfinador() {
 
     const dados = new Float32Array(analisador.fftSize);
 
-    let historico = [];
     let ultimoSom = Date.now();
+
+    // 🔥 Estabilização profissional
+    let frequenciaSuavizada = null;
+    let notaTravada = null;
 
     function atualizar() {
 
         analisador.getFloatTimeDomainData(dados);
 
-        const freq = detectarFrequencia(dados, contexto.sampleRate);
+        const freqDetectada = detectarFrequencia(dados, contexto.sampleRate);
         const agora = Date.now();
 
-        if (freq !== -1) {
+        if (freqDetectada !== -1) {
 
-            historico.push(freq);
-            if (historico.length > 5) historico.shift();
+            // 🔥 Suavização exponencial (muito mais estável)
+            if (frequenciaSuavizada === null) {
+                frequenciaSuavizada = freqDetectada;
+            } else {
+                frequenciaSuavizada = 
+                    frequenciaSuavizada * 0.85 + freqDetectada * 0.15;
+            }
 
-            const media = historico.reduce((a,b)=>a+b,0)/historico.length;
-
-            const resultado = analisarNota(media);
+            const resultado = analisarNota(frequenciaSuavizada);
 
             ultimoSom = agora;
 
             const notaElemento = document.getElementById("nota");
-            notaElemento.innerText = resultado.nome;
-            document.getElementById("hz").innerText = Math.round(media) + " Hz";
+            document.getElementById("hz").innerText =
+                Math.round(frequenciaSuavizada) + " Hz";
 
-            // 🎨 Cor da nota
+            // 🔥 Travar nota se estiver próxima
+            if (!notaTravada || Math.abs(resultado.diferenca) > 25) {
+                notaTravada = resultado.nome;
+            }
+
+            notaElemento.innerText = notaTravada;
+
+            // 🎨 Cor
             if (Math.abs(resultado.diferenca) < 5) {
                 notaElemento.style.color = "lime";
             } else {
                 notaElemento.style.color = "#777";
             }
 
-            // 📊 Barra visual (-50 a +50 cents)
+            // 🎯 Movimento suave do ponteiro
             let limite = 50;
-            let posicao = Math.max(-limite, Math.min(limite, resultado.diferenca));
+            let diferencaLimitada =
+                Math.max(-limite, Math.min(limite, resultado.diferenca));
 
-            let porcentagem = (posicao + limite) / (limite * 2) * 100;
-            document.getElementById("barra").style.left = porcentagem + "%";
-            document.getElementById("barra").style.transform = "translateX(-50%)";
+            let porcentagem =
+                50 + (diferencaLimitada / limite) * 50;
+
+            document.getElementById("ponteiro")
+                .style.left = porcentagem + "%";
         }
 
         if (agora - ultimoSom > 2500) {
             document.getElementById("nota").innerText = "--";
             document.getElementById("hz").innerText = "";
             document.getElementById("nota").style.color = "#777";
+            document.getElementById("ponteiro").style.left = "50%";
+
+            frequenciaSuavizada = null;
+            notaTravada = null;
         }
 
         requestAnimationFrame(atualizar);
@@ -90,7 +111,7 @@ function detectarFrequencia(dados, taxa) {
     let melhorOffset = -1;
     let melhorCorrelacao = 0;
 
-    for (let offset = 20; offset < 1000; offset++) {
+    for (let offset = 30; offset < 1000; offset++) {
 
         let correlacao = 0;
 
@@ -106,7 +127,7 @@ function detectarFrequencia(dados, taxa) {
         }
     }
 
-    if (melhorCorrelacao > 0.02) {
+    if (melhorCorrelacao > 0.03) {
         return taxa / melhorOffset;
     }
 
