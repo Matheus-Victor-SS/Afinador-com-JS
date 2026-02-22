@@ -2,6 +2,7 @@ let contexto;
 let analisador;
 let dados;
 let rodando = false;
+let usarBemol = true;
 
 let frequencias = [];
 let notaAtual = "";
@@ -83,20 +84,22 @@ function atualizar() {
 
 function analisarNota(freq) {
 
-    const notas = ["Dó", "Dó#", "Ré", "Ré#", "Mi", "Fá", "Fá#", "Sol", "Sol#", "Lá", "Lá#", "Si"];
+    const notasSustenido = ["Dó", "Dó#", "Ré", "Ré#", "Mi", "Fá", "Fá#", "Sol", "Sol#", "Lá", "Lá#", "Si"];
+    const notasBemol = ["Dó", "Ré♭", "Ré", "Mi♭", "Mi", "Fá", "Sol♭", "Sol", "Lá♭", "Lá", "Si♭", "Si"];
 
     const numero = 12 * (Math.log2(freq / 440));
     const notaNumero = Math.round(numero);
     const indice = notaNumero + 69;
 
-    const nome = notas[indice % 12];
+    const listaNotas = usarBemol ? notasBemol : notasSustenido;
+
+    const nome = listaNotas[(indice % 12 + 12) % 12];
 
     const freqIdeal = 440 * Math.pow(2, notaNumero / 12);
     const diferenca = 1200 * Math.log2(freq / freqIdeal);
 
     return { nome, diferenca };
 }
-
 function atualizarPonteiro(cents) {
 
     const ponteiro = document.getElementById("ponteiro");
@@ -126,6 +129,18 @@ function atualizarPonteiro(cents) {
         notaTexto.style.color = "#00ff88";
     } else {
         notaTexto.style.color = "#999";
+    }
+}
+function alternarAcidente() {
+
+    usarBemol = !usarBemol;
+
+    const botao = document.getElementById("botaoAlterar");
+
+    if (usarBemol) {
+        botao.innerText = "♭";
+    } else {
+        botao.innerText = "♯";
     }
 }
 

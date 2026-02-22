@@ -56,3 +56,18 @@ button {
     background: white;
     transition: left 0.1s linear;
 }
+#botaoAlterar {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 20px;
+    border: none;
+    background: #00ff88;
+    color: rgb(20, 20, 20);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#botaoAlterar:active {
+    transform: scale(0.95);
+}
