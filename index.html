@@ -1,28 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Afinador</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Afinador</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
 </head>
 <body>
-    <center>
-        <h1>Afinador</h1>
 
-        <button onclick="iniciarAfinador()">Iniciar Afinador</button>
+<button onclick="iniciarAfinador()">Iniciar Afinador</button>
 
-        <br><br>
+<div id="nota">--</div>
+<div id="hz"></div>
 
-        <!-- Nota -->
-        <div id="nota">...</div>
+<div id="barraContainer">
+    <div id="barra"></div>
+    <div id="marcador"></div>
+</div>
 
-        <!-- Frequência -->
-        <div id="hz">...</div>
-
-        <!-- Altura -->
-        <div id="altura">A nota está: ...</div>
-    </center>
-
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

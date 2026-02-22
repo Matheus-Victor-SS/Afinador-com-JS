@@ -1,7 +1,6 @@
 async function iniciarAfinador() {
 
     const microfone = await navigator.mediaDevices.getUserMedia({ audio: true });
-
     const contexto = new AudioContext();
     await contexto.resume();
 
@@ -13,67 +12,51 @@ async function iniciarAfinador() {
 
     const dados = new Float32Array(analisador.fftSize);
 
+    let historico = [];
     let ultimoSom = Date.now();
-
-    // 🔥 Variáveis de estabilização
-    let historicoFrequencias = [];
-    let ultimaNotaMostrada = "";
-    let contadorEstavel = 0;
 
     function atualizar() {
 
         analisador.getFloatTimeDomainData(dados);
 
-        const frequencia = detectarFrequencia(dados, contexto.sampleRate);
+        const freq = detectarFrequencia(dados, contexto.sampleRate);
         const agora = Date.now();
 
-        if (frequencia !== -1) {
+        if (freq !== -1) {
 
-            // 🔥 Suavização (guardar últimas 5 leituras)
-            historicoFrequencias.push(frequencia);
-            if (historicoFrequencias.length > 5) {
-                historicoFrequencias.shift();
-            }
+            historico.push(freq);
+            if (historico.length > 5) historico.shift();
 
-            // Média
-            const media = historicoFrequencias.reduce((a, b) => a + b, 0) / historicoFrequencias.length;
+            const media = historico.reduce((a,b)=>a+b,0)/historico.length;
 
             const resultado = analisarNota(media);
 
-            // 🔥 Só muda a nota se repetir 3 vezes seguidas
-            if (resultado.nome === ultimaNotaMostrada) {
-                contadorEstavel++;
+            ultimoSom = agora;
+
+            const notaElemento = document.getElementById("nota");
+            notaElemento.innerText = resultado.nome;
+            document.getElementById("hz").innerText = Math.round(media) + " Hz";
+
+            // 🎨 Cor da nota
+            if (Math.abs(resultado.diferenca) < 5) {
+                notaElemento.style.color = "lime";
             } else {
-                contadorEstavel = 0;
+                notaElemento.style.color = "#777";
             }
 
-            if (contadorEstavel > 2) {
+            // 📊 Barra visual (-50 a +50 cents)
+            let limite = 50;
+            let posicao = Math.max(-limite, Math.min(limite, resultado.diferenca));
 
-                ultimoSom = agora;
-
-                document.getElementById("nota").innerText = resultado.nome;
-                document.getElementById("hz").innerText = Math.round(media) + " Hz";
-
-                if (resultado.diferenca > 5) {
-                    document.getElementById("altura").innerText = "🔺 Alto";
-                }
-                else if (resultado.diferenca < -5) {
-                    document.getElementById("altura").innerText = "🔻 Baixo";
-                }
-                else {
-                    document.getElementById("altura").innerText = "✅ Afinado";
-                }
-            }
-
-            ultimaNotaMostrada = resultado.nome;
+            let porcentagem = (posicao + limite) / (limite * 2) * 100;
+            document.getElementById("barra").style.left = porcentagem + "%";
+            document.getElementById("barra").style.transform = "translateX(-50%)";
         }
 
-        // Limpa depois de 2.5 segundos sem som
         if (agora - ultimoSom > 2500) {
-            document.getElementById("nota").innerText = "";
+            document.getElementById("nota").innerText = "--";
             document.getElementById("hz").innerText = "";
-            document.getElementById("altura").innerText = "";
-            historicoFrequencias = [];
+            document.getElementById("nota").style.color = "#777";
         }
 
         requestAnimationFrame(atualizar);
@@ -84,30 +67,23 @@ async function iniciarAfinador() {
 
 
 
-// 🎵 Analisa nota
 function analisarNota(freq) {
 
-    const notas = ["Dó", "Dó#", "Ré", "Ré#", "Mi", "Fá", "Fá#", "Sol", "Sol#", "Lá", "Lá#", "Si"];
+    const notas = ["Dó","Dó#","Ré","Ré#","Mi","Fá","Fá#","Sol","Sol#","Lá","Lá#","Si"];
 
     const numero = 12 * (Math.log2(freq / 440));
     const notaNumero = Math.round(numero);
     const indice = notaNumero + 69;
 
-    const nomeNota = notas[indice % 12];
+    const nome = notas[indice % 12];
+    const freqIdeal = 440 * Math.pow(2, notaNumero / 12);
+    const diferenca = 1200 * Math.log2(freq / freqIdeal);
 
-    const frequenciaIdeal = 440 * Math.pow(2, notaNumero / 12);
-
-    const diferenca = 1200 * Math.log2(freq / frequenciaIdeal);
-
-    return {
-        nome: nomeNota,
-        diferenca: diferenca
-    };
+    return { nome, diferenca };
 }
 
 
 
-// 🎯 Detectar frequência
 function detectarFrequencia(dados, taxa) {
 
     let tamanho = dados.length;
@@ -122,7 +98,7 @@ function detectarFrequencia(dados, taxa) {
             correlacao += dados[i] * dados[i + offset];
         }
 
-        correlacao = correlacao / (tamanho - offset);
+        correlacao /= (tamanho - offset);
 
         if (correlacao > melhorCorrelacao) {
             melhorCorrelacao = correlacao;
