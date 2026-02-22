@@ -2,27 +2,26 @@ async function iniciarAfinador() {
 
     const microfone = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    const contextoAudio = new AudioContext();
-    await contextoAudio.resume();
+    const contexto = new AudioContext();
+    await contexto.resume();
 
-    const fonte = contextoAudio.createMediaStreamSource(microfone);
-    const analisador = contextoAudio.createAnalyser();
+    const fonte = contexto.createMediaStreamSource(microfone);
+    const analisador = contexto.createAnalyser();
 
     analisador.fftSize = 2048;
     fonte.connect(analisador);
 
     const dados = new Float32Array(analisador.fftSize);
 
-    // 🔥 Guardar última nota
-    let ultimaNota = null;
-    let ultimaFrequencia = null;
-    let ultimoTempoDetectado = 0;
+    let ultimaNota = "";
+    let ultimaFrequencia = 0;
+    let ultimoSom = Date.now();
 
     function atualizar() {
 
         analisador.getFloatTimeDomainData(dados);
 
-        const frequencia = detectarFrequencia(dados, contextoAudio.sampleRate);
+        const frequencia = detectarFrequencia(dados, contexto.sampleRate);
 
         const agora = Date.now();
 
@@ -32,14 +31,13 @@ async function iniciarAfinador() {
 
             ultimaNota = nota;
             ultimaFrequencia = frequencia;
-            ultimoTempoDetectado = agora;
+            ultimoSom = agora;
 
-            document.getElementById("nota").innerText = nota;
-            document.getElementById("hz").innerText = Math.round(frequencia) + " Hz";
+            document.getElementById("nota").innerText = ultimaNota;
+            document.getElementById("hz").innerText = Math.round(ultimaFrequencia) + " Hz";
         }
 
-        // ⏳ Se ficar 2 segundos sem som, limpa a tela
-        if (agora - ultimoTempoDetectado > 2000) {
+        if (agora - ultimoSom > 5000) {
             document.getElementById("nota").innerText = "";
             document.getElementById("hz").innerText = "";
         }
@@ -52,12 +50,17 @@ async function iniciarAfinador() {
 
 
 
-function converterParaNota(frequencia) {
-    const notas = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    const numero = 12 * (Math.log2(frequencia / 440));
+
+function converterParaNota(freq) {
+
+    const notas = ["Dó", "Dó#", "Ré", "Ré#", "Mi", "Fá", "Fá#", "Sol", "Sol#", "Lá", "Lá#", "Si"];
+
+    const numero = 12 * (Math.log2(freq / 440));
     const indice = Math.round(numero) + 69;
+
     return notas[indice % 12];
 }
+
 
 
 
@@ -67,7 +70,7 @@ function detectarFrequencia(dados, taxa) {
     let melhorOffset = -1;
     let melhorCorrelacao = 0;
 
-    for (let offset = 8; offset < 1000; offset++) {
+    for (let offset = 20; offset < 1000; offset++) {
 
         let correlacao = 0;
 
@@ -83,7 +86,7 @@ function detectarFrequencia(dados, taxa) {
         }
     }
 
-    if (melhorCorrelacao > 0.01) {
+    if (melhorCorrelacao > 0.02) {
         return taxa / melhorOffset;
     }
 
